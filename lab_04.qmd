@@ -168,48 +168,144 @@ For the next few tasks you should use `dplyr` functions, using pipe syntax.
 Try to format your code nicely so it is readable.
 
 
-- [ ] Add a new column to the `tibble` called `volume` that contains the volume of the diamond ($x \times y \times z$).
+- [x] Add a new column to the `tibble` called `volume` that contains the volume of the diamond ($x \times y \times z$).
 
 
 ::: {.solution}
-
+```{r}
+diamonds |>
+    mutate(volume = x * y * z)
+```
 :::
 
-- [ ] Create a `tibble` containing only the numeric columns of `diamonds`. (Hint: look at the tidyselect callout in the notes.)
+- [x] Create a `tibble` containing only the numeric columns of `diamonds`. (Hint: look at the tidyselect callout in the notes.)
 
 ::: {.solution}
-
+```{r}
+diamonds |>
+    select(where(is.numeric))
+```
 :::
 
 Now answer the following research questions.
 
-- [ ] What is the average price of all the diamonds in the dataset?
-- [ ] What is the volume of the 5 highest priced diamonds?
-- [ ] What is the average, minimum and maximum price of diamonds for each cut?
-- [ ] Ideal is the best cut, yet it has the lowest average price. Can you explain why? (Hint: compare the average `carat` of each cut.)
-- [ ] For each cut, what is the average price-per-carat for diamonds with that cut?
-- [ ] What are the most common combinations of cut and colour? (Hint: look up the `count` function)
-- [ ] Create a `tibble` containing diamonds that are "unusually" large (having volume more than three standard deviations from the mean volume)?
+- [x] What is the average price of all the diamonds in the dataset?
+- [x] What is the volume of the 5 highest priced diamonds?
+- [x] What is the average, minimum and maximum price of diamonds for each cut?
+- [x] Ideal is the best cut, yet it has the lowest average price. Can you explain why? (Hint: compare the average `carat` of each cut.)
+- [x] For each cut, what is the average price-per-carat for diamonds with that cut?
+- [x] What are the most common combinations of cut and colour? (Hint: look up the `count` function)
+- [x] Create a `tibble` containing diamonds that are "unusually" large (having volume more than three standard deviations from the mean volume)?
 
 ::: {.solution}
+```{r}
+diamonds |>
+    summarise(average_price <- mean(price))
+```
 
+```{r}
+diamonds |>
+  slice_max(price, n = 5) |>
+  mutate(volume = x * y * z) |>
+  select(price, volume)
+```
+
+```{r}
+diamonds |>
+  group_by(cut) |>
+  summarise(
+    average_price = mean(price),
+    min_price = min(price),
+    max_price = max(price)
+  )
+```
+
+```{r}
+diamonds |>
+  group_by(cut) |>
+  summarise(
+    average_carat = mean(carat),
+    average_price = mean(price)
+  )
+```
+
+```{r}
+diamonds |>
+  mutate(price_per_carat = price / carat) |>
+  group_by(cut) |>
+  summarise(
+    average_price_per_carat = mean(price_per_carat)
+  )
+```
+
+```{r}
+diamonds |>
+  count(cut, color, sort = TRUE)
+```
+
+```{r}
+large_diamonds <- diamonds |>
+  mutate(volume = x * y * z) |>
+  filter(volume > mean(volume) + 3 * sd(volume)) |>
+    summarise(count = n())
+
+large_diamonds
+```
 :::
 
 Before trusting these results, it is worth checking whether they make sense. Since all diamonds have the same density, heavier diamonds are larger, so `carat` and `volume` should be closely related.
 
-- [ ] Look at the largest few diamonds in your answer. Given their `carat`, are their volumes plausible?
-- [ ] Add a new column called `volume_per_carat` containing the ratio of `volume` to `carat`. Look at the diamonds with the smallest and largest values of this ratio. Does this suggest there any errors in the dataset?
-- [ ] Create a new `tibble` called `diamonds_clean` that keeps only diamonds with `volume_per_carat` between 100 and 250. How many diamonds did you remove?
-- [ ] Repeat the "unusually large" question using `diamonds_clean`. How many diamonds do you find now, and why has the number changed?
+- [x] Look at the largest few diamonds in your answer. Given their `carat`, are their volumes plausible?
+- [x] Add a new column called `volume_per_carat` containing the ratio of `volume` to `carat`. Look at the diamonds with the smallest and largest values of this ratio. Does this suggest there any errors in the dataset?
+- [x] Create a new `tibble` called `diamonds_clean` that keeps only diamonds with `volume_per_carat` between 100 and 250. How many diamonds did you remove?
+- [x] Repeat the "unusually large" question using `diamonds_clean`. How many diamonds do you find now, and why has the number changed?
 
 ::: {.solution}
+```{r}
+diamonds |>
+  mutate(volume = x * y * z) |>
+  slice_max(volume, n = 5) |>
+  select(carat, x, y, z, volume)
+```
 
+```{r}
+diamonds_volume <- diamonds |>
+  mutate(
+    volume = x * y * z,
+    volume_per_carat = volume / carat
+  )
+
+diamonds_volume |>
+  slice_min(volume_per_carat, n = 5)
+
+diamonds_volume |>
+  slice_max(volume_per_carat, n = 5)
+```
+
+```{r}
+diamonds_clean <- diamonds_volume |>
+  filter(between(volume_per_carat, 100, 250))
+
+nrow(diamonds) - nrow(diamonds_clean)
+```
+
+```{r}
+large_diamonds_clean <- diamonds_clean |>
+  filter(volume > mean(volume) + 3 * sd(volume))
+
+nrow(large_diamonds_clean)
+```
 :::
 
-- [ ] **Extension:** Find the most expensive diamond of each cut.
+- [x] **Extension:** Find the most expensive diamond of each cut.
 
 ::: {.solution}
-
+```{r}
+diamonds |>
+  group_by(cut) |>
+  slice_max(price, n = 1, with_ties = FALSE) |>
+  select(cut, price, carat)
+```
 :::
 
 
