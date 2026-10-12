@@ -16,12 +16,23 @@ This lab accompanies the Week 4 notes, [*Data Wrangling I - Loading, Cleaning an
 
 ### Task 1: Loading Data
 
-- [ ] The directory `data/part1/` contains three data files. Load them into `R` using `tidyverse`. (Hint: the three files are not all formatted in the same way.)
-- [ ] By default, each `read_*` function prints a message describing the columns it has read. Make sure these messages are hidden.
-- [ ] For each of the files, display the first few rows of the file.
+- [x] The directory `data/part1/` contains three data files. Load them into `R` using `tidyverse`. (Hint: the three files are not all formatted in the same way.)
+- [x] By default, each `read_*` function prints a message describing the columns it has read. Make sure these messages are hidden.
+- [x] For each of the files, display the first few rows of the file.
 
 ::: {.solution}
 
+```{r}
+library(tidyverse)
+
+data1 <- read_csv("data/part1/data1.csv", show_col_types = FALSE)
+data2 <- read_tsv("data/part1/data2.txt", show_col_types = FALSE)
+data3 <- read_csv2("data/part1/data3", show_col_types = FALSE)
+
+print(as_tibble(data1), n = 3)
+print(as_tibble(data2), n = 3)
+print(as_tibble(data3), n = 3)
+```
 :::
 
 ### Task 1b: Checking Loaded Data
@@ -32,43 +43,100 @@ In this task we will look more closely at the three files from Task 1.
 
 The file `data3` contains information about books in a bookshop.
 
-- [ ] Look at the type of each column. Is the `ISBN` column stored sensibly? (Hint: an ISBN is an identifier; would it make sense to add two ISBNs together? What would happen to an ISBN that starts with a `0`?)
-- [ ] Reload the file so that `ISBN` is stored as text. (Hint: look up the `col_types` argument of `read_delim`, and the `cols` and `col_character` functions.)
-- [ ] `readr` also has a function called `read_csv2`, which reads files that use `;` as a delimiter. Try loading `data3` with `read_csv2` instead. Compare the `PriceUSD` and `AvgRating` columns to the raw file. What has gone wrong?
+- [x] Look at the type of each column. Is the `ISBN` column stored sensibly? (Hint: an ISBN is an identifier; would it make sense to add two ISBNs together? What would happen to an ISBN that starts with a `0`?)
+- [x] Reload the file so that `ISBN` is stored as text. (Hint: look up the `col_types` argument of `read_delim`, and the `cols` and `col_character` functions.)
+- [x] `readr` also has a function called `read_csv2`, which reads files that use `;` as a delimiter. Try loading `data3` with `read_csv2` instead. Compare the `PriceUSD` and `AvgRating` columns to the raw file. What has gone wrong?
 
 ::: {.solution}
+```{r}
+data3 <- read_csv2(
+    "data/part1/data3",
+    show_col_types = FALSE,
+    col_types = cols(
+        ISBN = col_character()
+    )
+)
 
+print(as_tibble(data3), n = 3)
+```
 :::
 
 The file `data1.csv` contains student scores from two tests, with their average.
 
-- [ ] How are missing scores recorded in the raw file, and what do they become when loaded into `R`? What else in the file was loaded as missing?
-- [ ] Compute the mean of `score1`. Why do you get `NA`, and how can you fix this? (Hint: look at how `na.rm` was used in the notes.)
-- [ ] Look at the row for Henry Zhao. Are his scores really `0`? What happens to the mean of `score1` and of `average` if he is excluded?
+- [x] How are missing scores recorded in the raw file, and what do they become when loaded into `R`? What else in the file was loaded as missing?
+- [x] Compute the mean of `score1`. Why do you get `NA`, and how can you fix this? (Hint: look at how `na.rm` was used in the notes.)
+- [x] Look at the row for Henry Zhao. Are his scores really `0`? What happens to the mean of `score1` and of `average` if he is excluded?
 
 ::: {.solution}
+1. Recorded scores are recorded as empty values.
+2. 
+```{r}
+data1 |> 
+    summarise(mean_score <- mean(score1))
+```
+The score comes out as NA because there is missing values that have not been processed properly
+
+3. His scores are not actually 0, he was absent. If he is excluded, the mean of both score1 and average increase as there is less participants.
+```{r}
+library(tidyverse)
+
+data1 <- read_csv(
+    "data/part1/data1.csv", 
+    show_col_types = FALSE,
+    na = c("", "NA")) |> 
+    filter(notes != "Absent")
+
+data1 |> 
+    summarise(mean_score <- mean(score1, na.rm = TRUE))
+
+data1 |> 
+    summarise(mean_average <- mean(average))
+```
+
 
 :::
 
 The file `data2.txt` contains readings from air quality monitoring stations.
 
-- [ ] Create a `tibble` containing only `station_id` and the particulate matter readings (the columns measured in µg/m³). Use a tidyselect helper rather than typing out the column names.
+- [x] Create a `tibble` containing only `station_id` and the particulate matter readings (the columns measured in µg/m³). Use a tidyselect helper rather than typing out the column names.
 
 ::: {.solution}
+```{r}
+matter_readings <- data2 |>
+    select("station_id" | ends_with("ug_m3"))
 
+matter_readings
+```
 :::
 
-- [ ] How many readings are there in the file, and from how many different neighbourhoods? (Hint: look at the "Other Summarise Functions" tip in the notes.)
+- [x] How many readings are there in the file, and from how many different neighbourhoods? (Hint: look at the "Other Summarise Functions" tip in the notes.)
 
 ::: {.solution}
-
+```{r}
+data2 |>
+  summarise(
+    total_readings = n(),
+    total_neighbourhoods = n_distinct(neighborhood)
+  )
+```
 :::
 
-- [ ] Which readings have a `status` other than `OK`? What do you notice about their pollution readings and `sensor_uptime_pct`?
-- [ ] Compute the mean `pm2_5_ug_m3` over all readings, and over only the readings with status `OK`. Which would you report, and why?
+- [x] Which readings have a `status` other than `OK`? What do you notice about their pollution readings and `sensor_uptime_pct`?
+- [x] Compute the mean `pm2_5_ug_m3` over all readings, and over only the readings with status `OK`. Which would you report, and why?
 
 ::: {.solution}
+1. 
+```{r}
+data2 |>
+    filter(status != "OK")
+```
+Their `sensor_uptime_pct` is below 96
 
+```{r}
+data2 |>
+    filter(status == "OK") |>
+    summarise(average <- mean(pm2_5_ug_m3))
+```
 :::
 
 ### Task 2: `dplyr`
